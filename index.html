@@ -381,7 +381,7 @@
 </nav>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyW6qa-7D6mSwEQX8olxIgyaZ__xT_23GDRlI8IZ5FR3OLyE5oJrzx2-EtfEeVQq6b4OA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5RsPczuuJeThwfRnbiBsEDwxkKbhq2RImerJziSAy5UU5ZIPKeu-_Q-QDX32Glhl13A/exec";
 const QUALITY_COLORS = {
   "Médiocre": "#ef4444",
   "Moyen": "#f97316",
@@ -454,7 +454,16 @@ async function submitData() {
     qualite: selectedQuality
   };
 
-  localData.unshift({ ...payload, totalH: dur.total });
+  // Remplacement si même date, ajout sinon
+  const existingIndex = localData.findIndex(d => d.date === dateStr);
+  const isUpdate = existingIndex > -1;
+
+  if (isUpdate) {
+    localData[existingIndex] = { ...payload, totalH: dur.total };
+  } else {
+    localData.unshift({ ...payload, totalH: dur.total });
+  }
+
   if (localData.length > 30) localData = localData.slice(0, 30);
   localStorage.setItem("sleepData", JSON.stringify(localData));
 
@@ -465,7 +474,7 @@ async function submitData() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    showToast("✅ Nuit enregistrée !");
+    showToast(isUpdate ? "✅ Nuit mise à jour !" : "✅ Nuit enregistrée !");
   } catch (e) {
     showToast("⚠️ Sauvegardé localement");
   }
