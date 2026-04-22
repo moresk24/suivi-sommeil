@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sommeil">
 <meta name="theme-color" content="#0f0f1a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/ico" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Suivi Sommeil</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -32,7 +39,6 @@
     overflow-x: hidden;
   }
 
-  /* HEADER */
   .header {
     padding: 52px 24px 20px;
     background: linear-gradient(180deg, #13132a 0%, transparent 100%);
@@ -53,7 +59,6 @@
     -webkit-text-fill-color: transparent;
   }
 
-  /* NAVIGATION */
   .nav {
     position: fixed;
     bottom: 0; left: 0; right: 0;
@@ -83,12 +88,10 @@
   .nav-btn.active { color: var(--accent2); }
   .nav-icon { font-size: 20px; }
 
-  /* PAGES */
   .page { display: none; padding: 0 20px; animation: fadeIn 0.3s ease; }
   .page.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* CARD */
   .card {
     background: var(--surface);
     border-radius: var(--radius);
@@ -104,7 +107,6 @@
     margin-bottom: 16px;
   }
 
-  /* FORM */
   .time-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -148,7 +150,6 @@
     color: var(--gold);
   }
 
-  /* QUALITY SELECTOR */
   .quality-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -176,7 +177,6 @@
     color: var(--text);
   }
 
-  /* SUBMIT */
   .submit-btn {
     width: 100%;
     padding: 18px;
@@ -194,7 +194,6 @@
   .submit-btn:active { transform: scale(0.98); opacity: 0.9; }
   .submit-btn:disabled { opacity: 0.5; }
 
-  /* TOAST */
   .toast {
     position: fixed;
     top: 20px;
@@ -211,7 +210,6 @@
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 
-  /* STATS PAGE */
   .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -234,14 +232,12 @@
   }
   .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-  /* CHART */
   .chart-wrap {
     position: relative;
     height: 180px;
     margin-top: 4px;
   }
 
-  /* HISTORY */
   .history-item {
     display: flex;
     align-items: center;
@@ -271,20 +267,6 @@
     font-size: 14px;
   }
   .empty-state .big { font-size: 40px; margin-bottom: 12px; }
-
-  /* STREAK */
-  .streak-bar {
-    display: flex;
-    gap: 5px;
-    margin-top: 8px;
-  }
-  .streak-day {
-    flex: 1;
-    height: 6px;
-    border-radius: 3px;
-    background: rgba(255,255,255,0.08);
-  }
-  .streak-day.filled { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
 </style>
 </head>
 <body>
@@ -369,7 +351,7 @@
     </div>
   </div>
 
-  <div class="card" id="qualityChartCard">
+  <div class="card">
     <div class="card-title">Répartition qualité</div>
     <div class="chart-wrap" style="height:160px">
       <canvas id="qualityChart"></canvas>
@@ -412,20 +394,16 @@ let sleepChart = null;
 let qualityChart = null;
 let localData = JSON.parse(localStorage.getItem("sleepData") || "[]");
 
-// INIT
 function init() {
   const now = new Date();
   const opts = { weekday: 'long', day: 'numeric', month: 'long' };
   document.getElementById("headerDate").textContent = now.toLocaleDateString('fr-FR', opts);
-
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   document.getElementById("nightDate").textContent = yesterday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-
   updateDuration();
 }
 
-// DURATION CALC
 function updateDuration() {
   const c = document.getElementById("heureCoucher").value;
   const l = document.getElementById("heureLever").value;
@@ -442,14 +420,12 @@ function updateDuration() {
 document.getElementById("heureCoucher").addEventListener("input", updateDuration);
 document.getElementById("heureLever").addEventListener("input", updateDuration);
 
-// QUALITY
 function selectQuality(btn) {
   document.querySelectorAll(".quality-btn").forEach(b => b.classList.remove("selected"));
   btn.classList.add("selected");
   selectedQuality = btn.dataset.value;
 }
 
-// NAVIGATION
 function showPage(name, btn) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
@@ -459,7 +435,6 @@ function showPage(name, btn) {
   if (name === "history") renderHistory();
 }
 
-// SUBMIT
 async function submitData() {
   if (!selectedQuality) { showToast("❗ Choisis une qualité de sommeil"); return; }
   const dur = updateDuration();
@@ -479,7 +454,6 @@ async function submitData() {
     qualite: selectedQuality
   };
 
-  // Save locally
   localData.unshift({ ...payload, totalH: dur.total });
   if (localData.length > 30) localData = localData.slice(0, 30);
   localStorage.setItem("sleepData", JSON.stringify(localData));
@@ -500,7 +474,6 @@ async function submitData() {
   btn.textContent = "Enregistrer la nuit";
 }
 
-// TOAST
 function showToast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -508,10 +481,8 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-// STATS
 function renderStats() {
   if (localData.length === 0) return;
-
   const last7 = localData.slice(0, 7);
   const avg7 = last7.reduce((s, d) => s + d.totalH, 0) / last7.length;
   const avgH = Math.floor(avg7);
@@ -537,7 +508,6 @@ function renderSleepChart() {
   const data14 = localData.slice(0, 14).reverse();
   const labels = data14.map(d => d.date.slice(0,5));
   const values = data14.map(d => parseFloat(d.totalH.toFixed(2)));
-
   if (sleepChart) sleepChart.destroy();
   const ctx = document.getElementById("sleepChart").getContext("2d");
   sleepChart = new Chart(ctx, {
@@ -566,7 +536,6 @@ function renderQualityChart(freq) {
   const labels = Object.keys(freq);
   const values = Object.values(freq);
   const colors = labels.map(l => QUALITY_COLORS[l] || "#888");
-
   if (qualityChart) qualityChart.destroy();
   const ctx = document.getElementById("qualityChart").getContext("2d");
   qualityChart = new Chart(ctx, {
@@ -585,7 +554,6 @@ function renderQualityChart(freq) {
   });
 }
 
-// HISTORY
 function renderHistory() {
   const list = document.getElementById("historyList");
   if (localData.length === 0) {
