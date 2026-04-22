@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f1a">
+<title>Suivi Sommeil</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #181828;
+    --surface2: #1e1e32;
+    --accent: #7c6aff;
+    --accent2: #c084fc;
+    --gold: #f0c060;
+    --text: #e8e6f0;
+    --muted: #6b6880;
+    --radius: 18px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100dvh;
+    padding-bottom: 90px;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 52px 24px 20px;
+    background: linear-gradient(180deg, #13132a 0%, transparent 100%);
+  }
+  .header-date {
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .header-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* NAVIGATION */
+  .nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(15,15,26,0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 14px 0 12px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.2s;
+  }
+  .nav-btn.active { color: var(--accent2); }
+  .nav-icon { font-size: 20px; }
+
+  /* PAGES */
+  .page { display: none; padding: 0 20px; animation: fadeIn 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 14px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .card-title {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* FORM */
+  .time-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .time-field label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .time-field input[type="time"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    padding: 12px 14px;
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .time-field input[type="time"]:focus { border-color: var(--accent); }
+
+  .duration-display {
+    text-align: center;
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .duration-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .duration-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--gold);
+  }
+
+  /* QUALITY SELECTOR */
+  .quality-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .quality-btn {
+    background: var(--surface2);
+    border: 1.5px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 14px 10px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .quality-btn .emoji { font-size: 24px; }
+  .quality-btn.selected {
+    border-color: var(--accent);
+    background: rgba(124,106,255,0.15);
+    color: var(--text);
+  }
+
+  /* SUBMIT */
+  .submit-btn {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .submit-btn:active { transform: scale(0.98); opacity: 0.9; }
+  .submit-btn:disabled { opacity: 0.5; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: #2a2a3f;
+    border: 1px solid rgba(124,106,255,0.3);
+    border-radius: 50px;
+    padding: 12px 22px;
+    font-size: 14px;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* STATS PAGE */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .stat-label { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    background: linear-gradient(135deg, #fff, var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* CHART */
+  .chart-wrap {
+    position: relative;
+    height: 180px;
+    margin-top: 4px;
+  }
+
+  /* HISTORY */
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-date { font-size: 12px; color: var(--muted); min-width: 70px; }
+  .history-times { flex: 1; }
+  .history-duration {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    color: var(--gold);
+  }
+  .history-hours { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .quality-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .empty-state .big { font-size: 40px; margin-bottom: 12px; }
+
+  /* STREAK */
+  .streak-bar {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+  }
+  .streak-day {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.08);
+  }
+  .streak-day.filled { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-date" id="headerDate"></div>
+  <div class="header-title">Suivi<br><i>du sommeil</i></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- PAGE SAISIE -->
+<div class="page active" id="page-saisie">
+  <div class="card">
+    <div class="card-title">Nuit du <span id="nightDate"></span></div>
+    <div class="time-row">
+      <div class="time-field">
+        <label>🌙 Couché à</label>
+        <input type="time" id="heureCoucher" value="23:00">
+      </div>
+      <div class="time-field">
+        <label>☀️ Levé à</label>
+        <input type="time" id="heureLever" value="07:00">
+      </div>
+    </div>
+    <div class="duration-display">
+      <div class="duration-label">Durée de sommeil</div>
+      <div class="duration-value" id="durationDisplay">8h 00</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Qualité ressentie</div>
+    <div class="quality-grid">
+      <button class="quality-btn" data-value="Médiocre" onclick="selectQuality(this)">
+        <span class="emoji">😴</span>Médiocre
+      </button>
+      <button class="quality-btn" data-value="Moyen" onclick="selectQuality(this)">
+        <span class="emoji">😐</span>Moyen
+      </button>
+      <button class="quality-btn" data-value="Satisfaisant" onclick="selectQuality(this)">
+        <span class="emoji">😊</span>Satisfaisant
+      </button>
+      <button class="quality-btn" data-value="Très satisfaisant" onclick="selectQuality(this)">
+        <span class="emoji">🤩</span>Très satisfaisant
+      </button>
+    </div>
+  </div>
+
+  <button class="submit-btn" onclick="submitData()" id="submitBtn">Enregistrer la nuit</button>
+</div>
+
+<!-- PAGE STATS -->
+<div class="page" id="page-stats">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Moy. sommeil</div>
+      <div class="stat-value" id="statAvg">—</div>
+      <div class="stat-sub">sur 7 derniers jours</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Nuits saisies</div>
+      <div class="stat-value" id="statCount">0</div>
+      <div class="stat-sub">au total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Meilleure nuit</div>
+      <div class="stat-value" id="statBest">—</div>
+      <div class="stat-sub" id="statBestDate"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Qualité fréq.</div>
+      <div class="stat-value" id="statQuality" style="font-size:18px">—</div>
+      <div class="stat-sub">la plus souvent</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Durée sur 14 jours</div>
+    <div class="chart-wrap">
+      <canvas id="sleepChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card" id="qualityChartCard">
+    <div class="card-title">Répartition qualité</div>
+    <div class="chart-wrap" style="height:160px">
+      <canvas id="qualityChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE HISTORIQUE -->
+<div class="page" id="page-history">
+  <div class="card">
+    <div class="card-title">7 dernières nuits</div>
+    <div id="historyList"><div class="empty-state"><div class="big">🌙</div>Aucune nuit enregistrée</div></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('saisie', this)">
+    <span class="nav-icon">✏️</span>Saisie
+  </button>
+  <button class="nav-btn" onclick="showPage('stats', this)">
+    <span class="nav-icon">📊</span>Stats
+  </button>
+  <button class="nav-btn" onclick="showPage('history', this)">
+    <span class="nav-icon">📋</span>Historique
+  </button>
+</nav>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxGibXxcbgH9sb-p469FFNnmjKLRYz_X2EDNel9M1TI30lQo36TssKLmJFwKj8wKLx3ZQ/exec";
+const QUALITY_COLORS = {
+  "Médiocre": "#ef4444",
+  "Moyen": "#f97316",
+  "Satisfaisant": "#22c55e",
+  "Très satisfaisant": "#7c6aff"
+};
+
+let selectedQuality = null;
+let sleepChart = null;
+let qualityChart = null;
+let localData = JSON.parse(localStorage.getItem("sleepData") || "[]");
+
+// INIT
+function init() {
+  const now = new Date();
+  const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+  document.getElementById("headerDate").textContent = now.toLocaleDateString('fr-FR', opts);
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  document.getElementById("nightDate").textContent = yesterday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+
+  updateDuration();
+}
+
+// DURATION CALC
+function updateDuration() {
+  const c = document.getElementById("heureCoucher").value;
+  const l = document.getElementById("heureLever").value;
+  if (!c || !l) return;
+  const [ch, cm] = c.split(":").map(Number);
+  const [lh, lm] = l.split(":").map(Number);
+  let mins = (lh * 60 + lm) - (ch * 60 + cm);
+  if (mins < 0) mins += 1440;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  document.getElementById("durationDisplay").textContent = `${h}h ${m.toString().padStart(2,'0')}`;
+  return { h, m, total: mins / 60 };
+}
+document.getElementById("heureCoucher").addEventListener("input", updateDuration);
+document.getElementById("heureLever").addEventListener("input", updateDuration);
+
+// QUALITY
+function selectQuality(btn) {
+  document.querySelectorAll(".quality-btn").forEach(b => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  selectedQuality = btn.dataset.value;
+}
+
+// NAVIGATION
+function showPage(name, btn) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("page-" + name).classList.add("active");
+  btn.classList.add("active");
+  if (name === "stats") renderStats();
+  if (name === "history") renderHistory();
+}
+
+// SUBMIT
+async function submitData() {
+  if (!selectedQuality) { showToast("❗ Choisis une qualité de sommeil"); return; }
+  const dur = updateDuration();
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Envoi en cours…";
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const dateStr = yesterday.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const payload = {
+    date: dateStr,
+    heureCoucher: document.getElementById("heureCoucher").value,
+    heureLever: document.getElementById("heureLever").value,
+    duree: `${dur.h}h${dur.m.toString().padStart(2,'0')}`,
+    qualite: selectedQuality
+  };
+
+  // Save locally
+  localData.unshift({ ...payload, totalH: dur.total });
+  if (localData.length > 30) localData = localData.slice(0, 30);
+  localStorage.setItem("sleepData", JSON.stringify(localData));
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    showToast("✅ Nuit enregistrée !");
+  } catch (e) {
+    showToast("⚠️ Sauvegardé localement");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Enregistrer la nuit";
+}
+
+// TOAST
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+// STATS
+function renderStats() {
+  if (localData.length === 0) return;
+
+  const last7 = localData.slice(0, 7);
+  const avg7 = last7.reduce((s, d) => s + d.totalH, 0) / last7.length;
+  const avgH = Math.floor(avg7);
+  const avgM = Math.round((avg7 - avgH) * 60);
+  document.getElementById("statAvg").textContent = `${avgH}h${avgM.toString().padStart(2,'0')}`;
+  document.getElementById("statCount").textContent = localData.length;
+
+  const best = localData.reduce((a, b) => a.totalH > b.totalH ? a : b);
+  const bestH = Math.floor(best.totalH);
+  const bestM = Math.round((best.totalH - bestH) * 60);
+  document.getElementById("statBest").textContent = `${bestH}h${bestM.toString().padStart(2,'0')}`;
+  document.getElementById("statBestDate").textContent = best.date;
+
+  const freq = localData.reduce((acc, d) => { acc[d.qualite] = (acc[d.qualite] || 0) + 1; return acc; }, {});
+  const topQ = Object.entries(freq).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById("statQuality").textContent = topQ ? topQ[0] : "—";
+
+  renderSleepChart();
+  renderQualityChart(freq);
+}
+
+function renderSleepChart() {
+  const data14 = localData.slice(0, 14).reverse();
+  const labels = data14.map(d => d.date.slice(0,5));
+  const values = data14.map(d => parseFloat(d.totalH.toFixed(2)));
+
+  if (sleepChart) sleepChart.destroy();
+  const ctx = document.getElementById("sleepChart").getContext("2d");
+  sleepChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: values.map(v => v >= 7 ? "rgba(124,106,255,0.7)" : "rgba(240,96,96,0.6)"),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: "#6b6880", font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { color: "#6b6880", font: { size: 10 }, callback: v => v + "h" }, grid: { color: "rgba(255,255,255,0.04)" }, min: 0, max: 12 }
+      }
+    }
+  });
+}
+
+function renderQualityChart(freq) {
+  const labels = Object.keys(freq);
+  const values = Object.values(freq);
+  const colors = labels.map(l => QUALITY_COLORS[l] || "#888");
+
+  if (qualityChart) qualityChart.destroy();
+  const ctx = document.getElementById("qualityChart").getContext("2d");
+  qualityChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "right", labels: { color: "#e8e6f0", font: { size: 11 }, boxWidth: 12, padding: 12 } }
+      },
+      cutout: "60%"
+    }
+  });
+}
+
+// HISTORY
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  if (localData.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="big">🌙</div>Aucune nuit enregistrée</div>';
+    return;
+  }
+  const last7 = localData.slice(0, 7);
+  list.innerHTML = last7.map(d => `
+    <div class="history-item">
+      <div class="quality-dot" style="background:${QUALITY_COLORS[d.qualite] || '#888'}"></div>
+      <div class="history-times">
+        <div class="history-duration">${d.duree}</div>
+        <div class="history-hours">🌙 ${d.heureCoucher} → ☀️ ${d.heureLever}</div>
+      </div>
+      <div>
+        <div class="history-date">${d.date}</div>
+        <div style="font-size:11px;color:${QUALITY_COLORS[d.qualite] || '#888'};margin-top:3px">${d.qualite}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+init();
+</script>
+</body>
+</html>
