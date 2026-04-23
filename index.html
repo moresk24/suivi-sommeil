@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -399,6 +399,19 @@ let sleepChart = null;
 let qualityChart = null;
 let localData = JSON.parse(localStorage.getItem("sleepData") || "[]");
 
+async function loadFromGS() {
+  try {
+    const response = await fetch(SCRIPT_URL);
+    const data = await response.json();
+    if (data && data.length > 0) {
+      localData = data.sort((a, b) => b.date.localeCompare(a.date));
+      localStorage.setItem("sleepData", JSON.stringify(localData));
+    }
+  } catch(e) {
+    console.log("Chargement GS échoué, utilisation localStorage");
+  }
+}
+
 // Dédoublonnage : garde uniquement la dernière entrée par date
 localData = Object.values(
   localData.reduce((acc, d) => {
@@ -408,7 +421,7 @@ localData = Object.values(
 ).sort((a, b) => b.date.localeCompare(a.date));
 localStorage.setItem("sleepData", JSON.stringify(localData));
 
-function init() {
+async function init() {
   const now = new Date();
   const opts = { weekday: 'long', day: 'numeric', month: 'long' };
   document.getElementById("headerDate").textContent = now.toLocaleDateString('fr-FR', opts);
@@ -417,6 +430,7 @@ function init() {
   const nomAvant = yesterday.toLocaleDateString('fr-FR', { weekday: 'long' });
   const nomJour = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById("nightDate").textContent = `nuit de ${nomAvant} à ${nomJour}`;
+  await loadFromGS();
   updateDuration();
 }
 
