@@ -619,6 +619,19 @@ function renderHistory() {
 }
 
 init();
+// Notifications
+async function initNotifications() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return;
+  
+  const reg = await navigator.serviceWorker.register('/suivi-sommeil/service-worker.js');
+  await navigator.serviceWorker.ready;
+  reg.active.postMessage({ type: 'SCHEDULE_NOTIFICATION' });
+}
+
+initNotifications();
 </script>
 </body>
 </html>
