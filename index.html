@@ -518,6 +518,9 @@ function renderStats() {
 
   const freq = localData.reduce((acc, d) => { acc[d.qualite] = (acc[d.qualite] || 0) + 1; return acc; }, {});
   const topQ = Object.entries(freq).sort((a,b) => b[1]-a[1])[0];
+  const QUALITY_SCORES = { "Médiocre": 2.5, "Moyen": 5, "Satisfaisant": 7.5, "Très satisfaisant": 10 };
+  const avgQuality = last7.reduce((s, d) => s + (QUALITY_SCORES[d.qualite] || 0), 0) / last7.length;
+  document.getElementById("statQualityAvg").textContent = avgQuality.toFixed(1) + "/10";
   document.getElementById("statQuality").textContent = topQ ? topQ[0] : "—";
 
   renderSleepChart();
