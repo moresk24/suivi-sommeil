@@ -281,7 +281,7 @@
 <!-- PAGE SAISIE -->
 <div class="page active" id="page-saisie">
   <div class="card">
-    <div class="card-title">Nuit du <span id="nightDate"></span></div>
+    <div class="card-title"><span id="nightDate"></span></div>
     <div class="time-row">
       <div class="time-field">
         <label>🌙 Couché à</label>
@@ -409,10 +409,8 @@ function init() {
   document.getElementById("headerDate").textContent = now.toLocaleDateString('fr-FR', opts);
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const dayBefore = new Date(yesterday);
-  dayBefore.setDate(dayBefore.getDate() - 1);
-  const nomAvant = dayBefore.toLocaleDateString('fr-FR', { weekday: 'long' });
-  const nomJour = yesterday.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const nomAvant = yesterday.toLocaleDateString('fr-FR', { weekday: 'long' });
+  const nomJour = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById("nightDate").textContent = `nuit de ${nomAvant} à ${nomJour}`;
   updateDuration();
 }
