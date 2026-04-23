@@ -394,6 +394,15 @@ let sleepChart = null;
 let qualityChart = null;
 let localData = JSON.parse(localStorage.getItem("sleepData") || "[]");
 
+// Dédoublonnage : garde uniquement la dernière entrée par date
+localData = Object.values(
+  localData.reduce((acc, d) => {
+    acc[d.date] = d;
+    return acc;
+  }, {})
+).sort((a, b) => b.date.localeCompare(a.date));
+localStorage.setItem("sleepData", JSON.stringify(localData));
+
 function init() {
   const now = new Date();
   const opts = { weekday: 'long', day: 'numeric', month: 'long' };
